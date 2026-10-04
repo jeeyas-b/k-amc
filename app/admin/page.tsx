@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 import { Bell, ChevronDown, FileText, HeartPulse, ImagePlus, LayoutDashboard, LogOut, Menu, MoreHorizontal, Pencil, Plus, Save, Settings, Stethoscope, Users, X } from 'lucide-react'
 
 const navItems = [
@@ -19,6 +21,7 @@ const initialServices = [
 ]
 
 export default function AdminPage() {
+  const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
   const [saved, setSaved] = useState(false)
   const [activeSection, setActiveSection] = useState('Konten website')
@@ -40,7 +43,7 @@ export default function AdminPage() {
         </div>
         <div className="mt-12"><p className="mb-4 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Workspace</p><nav className="flex flex-col gap-1">{navItems.map(({ label, icon: Icon, active }) => <button key={label} onClick={() => { setActiveSection(label); setMenuOpen(false) }} className={`flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium transition-colors ${activeSection === label || active && activeSection === 'Konten website' ? 'bg-[#e7f1ed] text-[#176b5c]' : 'text-slate-500 hover:bg-slate-50 hover:text-[#152b3b]'}`}><Icon className="size-[18px]" />{label}</button>)}</nav></div>
         <div className="mt-auto rounded-2xl bg-[#f3f7f5] p-4"><p className="text-xs font-semibold text-[#152b3b]">Butuh bantuan?</p><p className="mt-1 text-xs leading-5 text-slate-500">Hubungi support untuk pertanyaan tentang dashboard.</p><button className="mt-3 text-xs font-bold text-[#176b5c]">Buka pusat bantuan →</button></div>
-        <button className="mt-5 flex items-center gap-3 border-t border-[#e9eeec] pt-5 text-sm font-medium text-slate-500"><LogOut className="size-[18px]" /> Keluar</button>
+        <button onClick={async () => { await createClient().auth.signOut(); router.replace('/login') }} className="mt-5 flex items-center gap-3 border-t border-[#e9eeec] pt-5 text-sm font-medium text-slate-500"><LogOut className="size-[18px]" /> Keluar</button>
       </aside>
 
       {menuOpen && <button aria-label="Tutup navigasi" className="fixed inset-0 z-20 bg-[#152b3b]/20 lg:hidden" onClick={() => setMenuOpen(false)} />}
