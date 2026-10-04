@@ -19,7 +19,7 @@ export default function LoginPage() {
     setLoading(true)
     const setup = await ensureDefaultAdmin()
     if (!setup.ok) {
-      setError(setup.message)
+      setError(setup.message ?? 'Akses admin belum siap. Coba lagi.')
       setLoading(false)
       return
     }
