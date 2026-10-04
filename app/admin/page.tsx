@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Bell, ChevronDown, FileText, HeartPulse, LayoutDashboard, LogOut, Menu, Pencil, Plus, Save, Settings, Stethoscope, Trash2, Users, X } from 'lucide-react'
 
 type Service = { id?: string; name: string; detail: string; status: 'Aktif' | 'Draft'; color: string; sort_order?: number }
+type ClinicSettings = { id: string; address: string; opening_hours: string; phone: string; online_consultation: string }
 
 const colors = ['bg-[#d8efe5]', 'bg-[#f8dfd3]', 'bg-[#e1e8f6]', 'bg-[#f7edc9]', 'bg-[#e7def7]']
 const navItems = [
@@ -23,7 +24,9 @@ export default function AdminPage() {
   const [saved, setSaved] = useState(false)
   const [services, setServices] = useState<Service[]>([])
   const [editing, setEditing] = useState<Service | null>(null)
+  const [settings, setSettings] = useState<ClinicSettings>({ id: 'default', address: 'Jl. Gunawarman No. 42 Jakarta Selatan', opening_hours: 'Senin—Minggu, 07.00—21.00', phone: '+62 21 555 0123', online_consultation: 'Konsultasi online tersedia' })
   const [loading, setLoading] = useState(true)
+  const [settingsSaving, setSettingsSaving] = useState(false)
   const [error, setError] = useState('')
 
   const loadServices = async () => {
@@ -33,7 +36,23 @@ export default function AdminPage() {
     setLoading(false)
   }
 
-  useEffect(() => { void loadServices() }, [])
+  useEffect(() => {
+    void loadServices()
+    void (async () => {
+      const { data } = await supabase.from('clinic_settings').select('id,address,opening_hours,phone,online_consultation').eq('id', 'default').maybeSingle()
+      if (data) setSettings(data as ClinicSettings)
+    })()
+  }, [])
+
+  const saveSettings = async () => {
+    setSettingsSaving(true)
+    setError('')
+    const { error: saveError } = await supabase.from('clinic_settings').upsert({ ...settings, updated_at: new Date().toISOString() })
+    setSettingsSaving(false)
+    if (saveError) { setError('Pengaturan kontak belum tersimpan. Coba lagi.'); return }
+    setSaved(true)
+    window.setTimeout(() => setSaved(false), 2200)
+  }
 
   const saveService = async () => {
     if (!editing?.name.trim() || !editing.detail.trim()) return
@@ -67,6 +86,7 @@ export default function AdminPage() {
       {menuOpen && <button aria-label="Tutup navigasi" className="fixed inset-0 z-20 bg-[#152b3b]/20 lg:hidden" onClick={() => setMenuOpen(false)} />}
       <section className="lg:pl-[278px]"><header className="flex h-[74px] items-center justify-between border-b border-[#dce4e1] bg-white px-5 sm:px-8 lg:px-10"><button className="rounded-lg p-2 lg:hidden" onClick={() => setMenuOpen(true)} aria-label="Buka menu"><Menu /></button><div className="hidden lg:block"><p className="text-xs text-slate-400">Selamat pagi,</p><p className="text-sm font-semibold">Yusri Barid</p></div><div className="ml-auto flex items-center gap-4"><Bell className="size-5 text-slate-500" /><span className="hidden h-6 w-px bg-[#e5ebe8] sm:block" /><span className="flex items-center gap-2 text-sm font-semibold"><span className="grid size-9 place-items-center rounded-full bg-[#d8efe5] text-xs text-[#176b5c]">YB</span><span className="hidden sm:block">Yusri Barid</span><ChevronDown className="hidden size-4 text-slate-400 sm:block" /></span></div></header>
         <div className="mx-auto max-w-[1100px] px-5 py-8 sm:px-8 lg:px-10 lg:py-10"><div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-[#e66d51]">Content manager</p><h1 className="mt-2 font-serif text-4xl tracking-tight sm:text-5xl">Layanan & Poli</h1><p className="mt-3 max-w-xl text-sm leading-6 text-slate-500">Tambah, ubah, dan hapus layanan spesialis yang tampil di halaman utama klinik.</p></div><a href="/" target="_blank" className="rounded-xl border border-[#dce4e1] bg-white px-4 py-3 text-sm font-semibold text-slate-600">Lihat website</a></div>
+          <section className="mt-8 rounded-2xl border border-[#dce4e1] bg-white p-6 shadow-[0_8px_30px_rgba(30,70,60,0.04)] sm:p-8"><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start"><div><h2 className="text-lg font-bold">Informasi kontak klinik</h2><p className="mt-1 text-sm text-slate-500">Edit informasi yang tampil di kartu janji temu halaman website.</p></div><button onClick={saveSettings} disabled={settingsSaving} className="flex items-center justify-center gap-2 rounded-xl bg-[#176b5c] px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"><Save className="size-4" /> {settingsSaving ? 'Menyimpan...' : 'Simpan perubahan'}</button></div><div className="mt-6 grid gap-4 sm:grid-cols-2"><label className="flex flex-col gap-2 text-sm font-semibold">Alamat<input value={settings.address} onChange={e => setSettings({ ...settings, address: e.target.value })} className="rounded-xl border border-[#dce4e1] bg-white px-4 py-3 font-normal outline-none focus:border-[#176b5c]" /></label><label className="flex flex-col gap-2 text-sm font-semibold">Jam buka<input value={settings.opening_hours} onChange={e => setSettings({ ...settings, opening_hours: e.target.value })} className="rounded-xl border border-[#dce4e1] bg-white px-4 py-3 font-normal outline-none focus:border-[#176b5c]" /></label><label className="flex flex-col gap-2 text-sm font-semibold">Nomor telepon<input value={settings.phone} onChange={e => setSettings({ ...settings, phone: e.target.value })} className="rounded-xl border border-[#dce4e1] bg-white px-4 py-3 font-normal outline-none focus:border-[#176b5c]" /></label><label className="flex flex-col gap-2 text-sm font-semibold">Konsultasi online<input value={settings.online_consultation} onChange={e => setSettings({ ...settings, online_consultation: e.target.value })} className="rounded-xl border border-[#dce4e1] bg-white px-4 py-3 font-normal outline-none focus:border-[#176b5c]" /></label></div></section>
           <section className="mt-8 rounded-2xl border border-[#dce4e1] bg-white p-6 shadow-[0_8px_30px_rgba(30,70,60,0.04)] sm:p-8"><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start"><div><h2 className="text-lg font-bold">Daftar layanan</h2><p className="mt-1 text-sm text-slate-500">Perubahan tersimpan langsung ke database website.</p></div><button onClick={() => setEditing({ name: '', detail: '', status: 'Aktif', color: colors[services.length % colors.length] })} className="flex items-center justify-center gap-2 rounded-xl bg-[#176b5c] px-4 py-3 text-sm font-semibold text-white"><Plus className="size-4" /> Tambah poli</button></div>
             {error && <p className="mt-5 rounded-xl bg-[#fff0eb] px-4 py-3 text-sm text-[#b34b35]">{error}</p>}
             {saved && <p className="mt-5 rounded-xl bg-[#e7f1ed] px-4 py-3 text-sm font-semibold text-[#176b5c]">Perubahan berhasil disimpan.</p>}
