@@ -1,19 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
+import { createClient } from '@/lib/supabase/client'
 import { ArrowUpRight, CalendarDays, Check, ChevronDown, Clock3, HeartPulse, Menu, Phone, ShieldCheck, Sparkles, Stethoscope, X } from 'lucide-react'
 
-const services = [
-  { icon: Stethoscope, title: 'Poli Interna', text: 'Konsultasi dan penanganan komprehensif untuk kesehatan organ dalam dan penyakit kronis.' },
-  { icon: HeartPulse, title: 'Poli Obgyn', text: 'Pendampingan kesehatan perempuan, kehamilan, persalinan, dan kesehatan reproduksi.' },
-  { icon: ShieldCheck, title: 'Poli Bedah', text: 'Evaluasi dan tindakan bedah dengan pendekatan yang aman, terencana, dan personal.' },
-  { icon: Sparkles, title: 'Poli Anak', text: 'Perawatan tumbuh kembang dan kesehatan anak dalam ruang yang nyaman bagi keluarga.' },
-  { icon: HeartPulse, title: 'Poli Gigi Ortodontis', text: 'Perawatan gigi dan penataan senyum untuk kesehatan mulut yang lebih optimal.' },
-  { icon: CalendarDays, title: 'Cek Kesehatan', text: 'Paket pemeriksaan menyeluruh untuk memahami kondisi tubuh Anda lebih awal.' },
-  { icon: Stethoscope, title: 'Poli Kulit & Kelamin', text: 'Perawatan kulit berbasis medis untuk membantu Anda tampil dan merasa lebih baik.' },
-  { icon: Phone, title: 'Konsultasi Online', text: 'Akses konsultasi dokter dari mana saja untuk kebutuhan kesehatan yang praktis.' },
-]
+type Service = { id: string; name: string; detail: string; status: 'Aktif' | 'Draft'; color: string; sort_order: number }
+
+const serviceIcons = [Stethoscope, HeartPulse, ShieldCheck, Sparkles, HeartPulse, CalendarDays, Stethoscope, Phone]
+const serviceColors = ['bg-[#d8efe5]', 'bg-[#f8dfd3]', 'bg-[#e1e8f6]', 'bg-[#f7edc9]', 'bg-[#e7def7]']
 
 const faqs = ['Apakah bisa konsultasi secara online?', 'Bagaimana cara membuat janji temu?', 'Apakah menerima asuransi kesehatan?']
 
@@ -21,6 +16,22 @@ export default function Page() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [booked, setBooked] = useState(false)
+  const [services, setServices] = useState<Service[]>([])
+  const [servicesLoading, setServicesLoading] = useState(true)
+
+  useEffect(() => {
+    const supabase = createClient()
+    const loadServices = async () => {
+      const { data } = await supabase
+        .from('services')
+        .select('id,name,detail,status,color,sort_order')
+        .eq('status', 'Aktif')
+        .order('sort_order')
+      setServices((data ?? []) as Service[])
+      setServicesLoading(false)
+    }
+    void loadServices()
+  }, [])
 
   return (
     <main className="min-h-screen overflow-hidden bg-background text-foreground">
@@ -40,7 +51,7 @@ export default function Page() {
 
       <section className="border-y border-border bg-card"><div className="mx-auto grid max-w-7xl grid-cols-2 divide-x divide-border lg:grid-cols-4"><div className="p-6 lg:p-9"><p className="font-serif text-4xl text-primary">12+</p><p className="mt-1 text-xs text-muted-foreground">tahun merawat Indonesia</p></div><div className="p-6 lg:p-9"><p className="font-serif text-4xl text-primary">18</p><p className="mt-1 text-xs text-muted-foreground">dokter dan terapis</p></div><div className="p-6 lg:p-9"><p className="font-serif text-4xl text-primary">4.9</p><p className="mt-1 text-xs text-muted-foreground">rating pengalaman pasien</p></div><div className="p-6 lg:p-9"><p className="font-serif text-4xl text-primary">30m</p><p className="mt-1 text-xs text-muted-foreground">rata-rata waktu tunggu</p></div></div></section>
 
-      <section id="layanan" className="mx-auto max-w-7xl px-5 py-24 lg:px-10 lg:py-32"><div className="mb-14 flex flex-col justify-between gap-6 md:flex-row md:items-end"><div><p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-accent">Yang kami lakukan</p><h2 className="max-w-lg font-serif text-4xl leading-tight text-primary sm:text-5xl">Kesehatan bukan<br /><em className="font-normal text-secondary">satu ukuran untuk semua.</em></h2></div><p className="max-w-xs text-sm leading-6 text-muted-foreground">Kami menggabungkan keahlian klinis dengan percakapan yang jujur, agar setiap perawatan terasa personal.</p></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{services.map(({ icon: Icon, title, text }, i) => <article key={title} className={`group rounded-[1.75rem] p-7 transition-transform hover:-translate-y-1 ${i === 1 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>{i < 2 ? <div className="relative mb-6 overflow-hidden rounded-2xl"><Image src={i === 0 ? '/doctor-interna.png' : '/doctor-obgyn.png'} alt={`Dokter ${title}`} width={640} height={420} className="aspect-[3/2] w-full object-cover transition-transform duration-500 group-hover:scale-105" /><span className="absolute bottom-3 left-3 rounded-full bg-card/90 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">Dokter spesialis</span></div> : <div className={`mb-20 grid size-12 place-items-center rounded-full ${i === 1 ? 'bg-secondary text-secondary-foreground' : 'bg-card text-accent'}`}><Icon className="size-5" /></div>}<h3 className="text-xl font-semibold">{title}</h3><p className={`mt-3 text-sm leading-6 ${i === 1 ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>{text}</p><div className="mt-8 flex items-center justify-between border-t border-current/10 pt-5 text-xs font-semibold"><span>Pelajari lebih lanjut</span><ArrowUpRight className="size-4 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" /></div></article>)}</div></section>
+      <section id="layanan" className="mx-auto max-w-7xl px-5 py-24 lg:px-10 lg:py-32"><div className="mb-14 flex flex-col justify-between gap-6 md:flex-row md:items-end"><div><p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-accent">Yang kami lakukan</p><h2 className="max-w-lg font-serif text-4xl leading-tight text-primary sm:text-5xl">Kesehatan bukan<br /><em className="font-normal text-secondary">satu ukuran untuk semua.</em></h2></div><p className="max-w-xs text-sm leading-6 text-muted-foreground">Kami menggabungkan keahlian klinis dengan percakapan yang jujur, agar setiap perawatan terasa personal.</p></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{servicesLoading ? <p className="col-span-full py-10 text-center text-sm text-muted-foreground">Memuat layanan terbaru...</p> : services.length === 0 ? <p className="col-span-full py-10 text-center text-sm text-muted-foreground">Belum ada layanan yang tersedia.</p> : services.map((service, i) => { const Icon = serviceIcons[i % serviceIcons.length]; return <article key={service.id} className={`group rounded-[1.75rem] p-7 transition-transform hover:-translate-y-1 ${i === 1 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>{i < 2 ? <div className="relative mb-6 overflow-hidden rounded-2xl"><Image src={i === 0 ? '/doctor-interna.png' : '/doctor-obgyn.png'} alt={`Dokter ${service.name}`} width={640} height={420} className="aspect-[3/2] w-full object-cover transition-transform duration-500 group-hover:scale-105" /><span className="absolute bottom-3 left-3 rounded-full bg-card/90 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">Dokter spesialis</span></div> : <div className={`mb-20 grid size-12 place-items-center rounded-full ${i === 1 ? 'bg-secondary text-secondary-foreground' : `${service.color || serviceColors[i % serviceColors.length]} text-accent`}`}><Icon className="size-5" /></div>}<h3 className="text-xl font-semibold">{service.name}</h3><p className={`mt-3 text-sm leading-6 ${i === 1 ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>{service.detail}</p><div className="mt-8 flex items-center justify-between border-t border-current/10 pt-5 text-xs font-semibold"><span>Pelajari lebih lanjut</span><ArrowUpRight className="size-4 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" /></div></article> })}</div></section>
 
       <section id="cerita" className="bg-primary px-5 py-20 text-primary-foreground lg:px-10 lg:py-28"><div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-center"><div><p className="mb-5 text-xs font-semibold uppercase tracking-[0.2em] text-secondary">Mengapa ruangsehat</p><h2 className="font-serif text-4xl leading-tight sm:text-6xl">Datang sebagai pasien.<br /><em className="font-normal text-secondary">Pulang sebagai diri sendiri.</em></h2></div><div className="grid gap-8 sm:grid-cols-2"><div className="border-l border-primary-foreground/20 pl-5"><p className="font-serif text-3xl text-secondary">01</p><h3 className="mt-4 font-semibold">Didengar sepenuhnya</h3><p className="mt-2 text-sm leading-6 text-primary-foreground/65">Kami menyediakan waktu untuk memahami cerita di balik setiap gejala.</p></div><div className="border-l border-primary-foreground/20 pl-5"><p className="font-serif text-3xl text-secondary">02</p><h3 className="mt-4 font-semibold">Dijelaskan dengan jujur</h3><p className="mt-2 text-sm leading-6 text-primary-foreground/65">Pilihan perawatan selalu dibicarakan dengan bahasa yang mudah dipahami.</p></div><div className="border-l border-primary-foreground/20 pl-5"><p className="font-serif text-3xl text-secondary">03</p><h3 className="mt-4 font-semibold">Ditemani berkelanjutan</h3><p className="mt-2 text-sm leading-6 text-primary-foreground/65">Hubungan kami tidak selesai setelah Anda keluar dari ruang konsultasi.</p></div><div className="border-l border-primary-foreground/20 pl-5"><p className="font-serif text-3xl text-secondary">04</p><h3 className="mt-4 font-semibold">Ruang yang menenangkan</h3><p className="mt-2 text-sm leading-6 text-primary-foreground/65">Lingkungan yang dirancang untuk membuat Anda merasa aman dan nyaman.</p></div></div></div></section>
 
